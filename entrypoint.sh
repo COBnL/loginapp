@@ -8,4 +8,6 @@
              --redirect-uri http://127.0.0.1:5555/callback \
              --disable-choices \
              --extra-scopes groups \
-             --app-name "Kubernetes login"
+             --app-name "Kubernetes login" \
+             --api-server "http://localhost" \
+             --api-ca "/tmp/ca.crt"

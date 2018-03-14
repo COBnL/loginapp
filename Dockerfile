@@ -9,7 +9,7 @@ RUN apk update && \
 
 
 FROM alpine:3.6
-MAINTAINER Flavien Hardy <flav.hardy@gmail.com>
+MAINTAINER COBNL <cobnl@gmail.com>
 
 COPY --from=build /app/login-app /
 

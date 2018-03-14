@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -38,6 +39,8 @@ type app struct {
 	TlsCert         string `yaml:"tls_cert"`
 	TlsKey          string `yaml:"tls_key"`
 	Debug           bool   `yaml:"debug"`
+	ApiServer       string `yaml:"api_server"`
+	ApiCa           string `yaml:"api_ca"`
 
 	verifier *oidc.IDTokenVerifier
 	provider *oidc.Provider
@@ -330,5 +333,13 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 	buff := new(bytes.Buffer)
 	json.Indent(buff, []byte(claims), "", "  ")
 
-	renderToken(w, a.RedirectURI, rawIDToken, token.RefreshToken, buff.Bytes(), a.ClientSecret)
+	ca, err := ioutil.ReadFile(a.ApiCa)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read CA file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	caBase64 := base64.StdEncoding.EncodeToString(ca)
+
+	renderToken(w, a.RedirectURI, rawIDToken, token.RefreshToken, buff.Bytes(), a.ClientSecret, a.ApiServer, caBase64)
 }

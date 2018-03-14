@@ -63,6 +63,8 @@ type tokenTmplData struct {
 	RedirectURL  string
 	Claims       interface{}
 	ClientSecret string
+	ApiServer    string
+	ApiCa        string
 }
 
 var tokenTmpl = template.Must(template.New("token.html").Parse(`<html>
@@ -95,6 +97,21 @@ pre {
   <div class="form-style-5">
   <p>Copy this in your ~/.kube/config file:</p>
   <pre><code class="hljs yaml">
+apiVersion: v1
+clusters:
+- cluster:
+    server: {{ .ApiServer }}
+    certificate-authority-data: {{ .ApiCa }}
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: {{ .Claims.name }}
+  name: {{ .Claims.name }}@kubernetes
+current-context: {{ .Claims.name }}@kubernetes
+kind: Config
+preferences: {}
+users:
 - name: {{ .Claims.name }}
   user:
     auth-provider:
@@ -110,7 +127,7 @@ pre {
 </html>
 `))
 
-func renderToken(w http.ResponseWriter, redirectURL, idToken, refreshToken string, claims []byte, clientSecret string) {
+func renderToken(w http.ResponseWriter, redirectURL, idToken, refreshToken string, claims []byte, clientSecret string, apiServer string, apiCa string) {
 	var json_claims map[string]interface{}
 	if err := json.Unmarshal(claims, &json_claims); err != nil {
 		panic(err)
@@ -121,6 +138,8 @@ func renderToken(w http.ResponseWriter, redirectURL, idToken, refreshToken strin
 		RedirectURL:  redirectURL,
 		Claims:       json_claims,
 		ClientSecret: clientSecret,
+		ApiServer:    apiServer,
+		ApiCa:        apiCa,
 	})
 }
 
