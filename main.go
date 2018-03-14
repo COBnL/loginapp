@@ -20,7 +20,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -187,8 +186,7 @@ func cmd() *cobra.Command {
 			a.provider = provider
 			a.verifier = provider.Verifier(&oidc.Config{ClientID: a.ClientID})
 
-			http.HandleFunc("/", a.handleIndex)
-			http.HandleFunc("/login", a.handleLogin)
+			http.HandleFunc("/", a.handleLogin)
 			http.HandleFunc(u.Path, a.handleCallback)
 
 			switch listenURL.Scheme {
@@ -213,10 +211,6 @@ func main() {
 	}
 }
 
-func (a *app) handleIndex(w http.ResponseWriter, r *http.Request) {
-	renderIndex(w, a.InitExtraScopes, a.DisableChoices, a.AppName)
-}
-
 func (a *app) oauth2Config(scopes []string) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     a.ClientID,
@@ -237,29 +231,10 @@ func (a *app) oauth2Config(scopes []string) *oauth2.Config {
 
 func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var scopes []string
-	if a.InitExtraScopes != "" {
-		for _, scope := range strings.Split(a.InitExtraScopes, ",") {
-			scopes = append(scopes, scope)
-		}
-	}
-	if extraScopes := r.FormValue("extra_scopes"); extraScopes != "" {
-		for _, scope := range strings.Split(extraScopes, ",") {
-			scopes = append(scopes, scope)
-		}
-	}
-	var clients []string
-	if crossClients := r.FormValue("cross_client"); crossClients != "" {
-		clients = strings.Split(crossClients, ",")
-	}
-	for _, client := range clients {
-		scopes = append(scopes, "audience:server:client_id:"+client)
-	}
 
 	authCodeURL := ""
 	scopes = append(scopes, "openid", "profile", "email", "groups")
-	if r.FormValue("offline_access") != "yes" {
-		authCodeURL = a.oauth2Config(scopes).AuthCodeURL(appState)
-	} else if a.offlineAsScope {
+	if a.offlineAsScope {
 		scopes = append(scopes, "offline_access")
 		authCodeURL = a.oauth2Config(scopes).AuthCodeURL(appState)
 	} else {
